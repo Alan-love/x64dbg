@@ -176,6 +176,7 @@ SymbolView::SymbolView(QWidget* parent) : QWidget(parent), ui(new Ui::SymbolView
     // Create reference view
     mSymbolSearchList = new SymbolSearchList();
     mSymbolList = new SearchListView(this, mSymbolSearchList, true, true);
+    mSymbolList->setAccessibleName(tr("Symbols"));
     mSymbolList->mSearchStartCol = 1;
 
     // Add a disassembly popup
@@ -184,6 +185,7 @@ SymbolView::SymbolView(QWidget* parent) : QWidget(parent), ui(new Ui::SymbolView
 
     // Create module list
     mModuleList = new StdIconSearchListView(this, true, false, new StdTableSearchList(new ModuleStdTable(), new ModuleStdTable()));
+    mModuleList->setAccessibleName(tr("Modules"));
     mModuleList->setSearchStartCol(ColBase);
     mModuleList->enableMultiSelection(true);
     mModuleList->setAddressColumn(ColBase, true);
@@ -228,8 +230,7 @@ SymbolView::SymbolView(QWidget* parent) : QWidget(parent), ui(new Ui::SymbolView
     connect(Bridge::getBridge(), SIGNAL(clearSymbolLog()), this, SLOT(clearSymbolLogSlot()));
     connect(Bridge::getBridge(), SIGNAL(selectionSymmodGet(SELECTIONDATA*)), this, SLOT(selectionGetSlot(SELECTIONDATA*)));
     connect(Bridge::getBridge(), SIGNAL(focusSymmod()), mModuleList, SLOT(setFocus()));
-    connect(mModuleList->stdList(), SIGNAL(selectionChanged(duint)), this, SLOT(moduleSelectionChanged(duint)));
-    connect(mModuleList->stdSearchList(), SIGNAL(selectionChanged(duint)), this, SLOT(moduleSelectionChanged(duint)));
+    connect(mModuleList, SIGNAL(selectionChanged(duint)), this, SLOT(moduleSelectionChanged(duint)));
     connect(mModuleList, SIGNAL(emptySearchResult()), this, SLOT(emptySearchResultSlot()));
     connect(mModuleList, SIGNAL(listContextMenuSignal(QMenu*)), this, SLOT(moduleContextMenu(QMenu*)));
     connect(mModuleList, SIGNAL(enterPressedSignal()), this, SLOT(moduleFollow()));
@@ -562,7 +563,7 @@ void SymbolView::symbolFollowImport()
     auto addr = DbgValFromString(QString("[%1]").arg(addrText).toUtf8().constData());
     if(!DbgMemIsValidReadPtr(addr))
         return;
-    if(DbgFunctions()->MemIsCodePage(addr, false))
+    if(DbgFunctions()->MemIsCodePage(addr, true))
     {
         DbgCmdExec(QString("disasm %1").arg(ToPtrString(addr)));
     }
@@ -622,7 +623,7 @@ void SymbolView::enterPressedSlot()
         return;
     if(mSymbolList->mCurList->getCellContent(mSymbolList->mCurList->getInitialSelection(), 1) == tr("Import"))
         symbolFollowImport();
-    else if(DbgFunctions()->MemIsCodePage(addr, false))
+    else if(DbgFunctions()->MemIsCodePage(addr, true))
         symbolFollow();
     else
     {
@@ -865,8 +866,7 @@ void SymbolView::moduleSetParty()
     duint modbase = DbgValFromString(mModuleList->mCurList->getCellContent(mModuleList->mCurList->getInitialSelection(), ColBase).toUtf8().constData());
     party = DbgFunctions()->ModGetParty(modbase);
     QString mLineEditeditText;
-    QIcon bookmark = DIcon("bookmark");
-    if(SimpleInputBox(this, tr("Mark the party of the module as"), QString::number(party), mLineEditeditText, tr("0 is user module, 1 is system module."), &bookmark))
+    if(SimpleInputBox(this, tr("Mark the party of the module as"), QString::number(party), mLineEditeditText, tr("0 is user module, 1 is system module."), DIcon("bookmark")))
     {
         bool ok;
         party = mLineEditeditText.toInt(&ok);
